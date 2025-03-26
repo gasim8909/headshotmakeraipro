@@ -55,18 +55,18 @@ export default async function Home() {
   const result = customTiers;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-background theme-transition">
       <Navbar />
       <Hero />
 
       {/* Features Section */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-background theme-transition">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 theme-transition">
               Professional Headshots Made Easy
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto theme-transition">
               Our AI-powered platform transforms your casual photos into
               professional headshots in seconds. Try it for free, no account
               required!
@@ -98,11 +98,11 @@ export default async function Home() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                className="p-6 bg-card rounded-xl shadow-sm hover:shadow-md border border-border transition-all theme-transition"
               >
-                <div className="text-blue-600 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <div className="text-primary mb-4 theme-transition">{feature.icon}</div>
+                <h3 className="text-xl font-semibold mb-2 theme-transition">{feature.title}</h3>
+                <p className="text-muted-foreground theme-transition">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -110,40 +110,40 @@ export default async function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-muted theme-transition">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 theme-transition">How It Works</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto theme-transition">
               Transform your photos in three simple steps
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-blue-600 text-xl font-bold">1</span>
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 theme-transition">
+                <span className="text-primary text-xl font-bold theme-transition">1</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Upload Your Photo</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-2 theme-transition">Upload Your Photo</h3>
+              <p className="text-muted-foreground theme-transition">
                 Drag & drop or browse to upload your casual photo
               </p>
             </div>
             <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-blue-600 text-xl font-bold">2</span>
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 theme-transition">
+                <span className="text-primary text-xl font-bold theme-transition">2</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Select Your Style</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-2 theme-transition">Select Your Style</h3>
+              <p className="text-muted-foreground theme-transition">
                 Choose from multiple professional headshot styles
               </p>
             </div>
             <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-blue-600 text-xl font-bold">3</span>
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 theme-transition">
+                <span className="text-primary text-xl font-bold theme-transition">3</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Download & Share</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-2 theme-transition">Download & Share</h3>
+              <p className="text-muted-foreground theme-transition">
                 Get your professional headshot in multiple formats
               </p>
             </div>
@@ -152,31 +152,31 @@ export default async function Home() {
       </section>
 
       {/* Sample Transformations */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background theme-transition">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">See the Transformation</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 theme-transition">See the Transformation</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto theme-transition">
               Check out these amazing before and after examples
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="rounded-xl overflow-hidden shadow-md">
-                <div className="relative aspect-square bg-gray-100">
+              <div key={item} className="rounded-xl overflow-hidden shadow-md border border-border theme-transition">
+                <div className="relative aspect-square bg-muted/50">
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse"></div>
+                    <div className="w-full h-full bg-gradient-to-r from-muted to-muted/70 animate-pulse"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <p className="text-gray-500 font-medium">
+                      <p className="text-muted-foreground font-medium theme-transition">
                         Sample Transformation {item}
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="p-4 bg-white">
-                  <h3 className="font-semibold">Professional Style {item}</h3>
-                  <p className="text-sm text-gray-600">
+                <div className="p-4 bg-card theme-transition">
+                  <h3 className="font-semibold theme-transition">Professional Style {item}</h3>
+                  <p className="text-sm text-muted-foreground theme-transition">
                     See how our AI transforms casual photos
                   </p>
                 </div>
@@ -187,18 +187,18 @@ export default async function Home() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-24 bg-gray-50" id="pricing">
+      <section className="py-24 bg-muted theme-transition" id="pricing">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 theme-transition">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto theme-transition">
               Choose the perfect plan for your headshot needs. Start for free,
               no account required.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto justify-center">
             {result?.map((item: any) => (
               <PricingCard key={item.id} item={item} user={user} />
             ))}
@@ -207,18 +207,18 @@ export default async function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background theme-transition">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">
+          <h2 className="text-3xl font-bold mb-4 theme-transition">
             Ready to Transform Your Photos?
           </h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto theme-transition">
             Start with 2 free generations as a guest, or create an account for
             more features.
           </p>
           <a
             href="/create"
-            className="inline-flex items-center px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-6 py-3 text-primary-foreground bg-gradient-primary rounded-lg hover:opacity-90 glow-primary theme-transition"
           >
             Create Your Headshot Now
             <ArrowUpRight className="ml-2 w-4 h-4" />

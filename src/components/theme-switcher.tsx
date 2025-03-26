@@ -22,19 +22,17 @@ const ThemeSwitcher = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  const ICON_SIZE = 20;
-
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="rounded-full w-8 h-8 flex items-center justify-center transition-colors hover:bg-secondary"
+      className="rounded-full w-10 h-10 flex items-center justify-center transition-colors hover:bg-secondary theme-transition"
     >
       {theme === "dark" ? (
-        <Sun size={ICON_SIZE} className="text-yellow-400" />
+        <Sun className="h-5 w-5 text-white" />
       ) : (
-        <Moon size={ICON_SIZE} className="text-blue-600" />
+        <Moon className="h-5 w-5 text-slate-700" />
       )}
     </Button>
   );

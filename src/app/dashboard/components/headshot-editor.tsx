@@ -15,10 +15,12 @@ import {
   AlertCircle,
   CreditCard,
   X,
+  Check,
 } from "lucide-react";
 
 interface HeadshotEditorProps {
   onGenerate?: (result: { image: string; style: string }) => void;
+  onSaveToProfile?: (image: string, style: string) => Promise<void>;
   maxGenerations?: number;
   generationsRemaining?: number;
   isPremium?: boolean;
@@ -26,6 +28,7 @@ interface HeadshotEditorProps {
 
 export default function HeadshotEditor({
   onGenerate,
+  onSaveToProfile,
   maxGenerations = 5,
   generationsRemaining = 5,
   isPremium = false,
@@ -33,6 +36,8 @@ export default function HeadshotEditor({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [style, setStyle] = useState("corporate");
   const [intensity, setIntensity] = useState(50);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +83,7 @@ export default function HeadshotEditor({
 
     setIsGenerating(true);
     setError(null);
+    setIsSaved(false);
 
     try {
       const response = await fetch("/api/gemini", {
@@ -132,7 +138,7 @@ export default function HeadshotEditor({
     <div className="w-full max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
       {showSubscribePopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl theme-transition">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold flex items-center">
                 <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
@@ -176,7 +182,7 @@ export default function HeadshotEditor({
           <h3 className="text-xl font-semibold">Upload Your Photo</h3>
 
           <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center h-80 bg-gray-50"
+            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 flex flex-col items-center justify-center h-80 bg-gray-50 dark:bg-gray-900 theme-transition"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
           >
@@ -246,7 +252,7 @@ export default function HeadshotEditor({
             </Tabs>
 
             {!isPremium && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400 theme-transition">
                 Upgrade to Premium for access to all professional styles
               </p>
             )}
@@ -306,7 +312,7 @@ export default function HeadshotEditor({
         <div className="space-y-6">
           <h3 className="text-xl font-semibold">Your Professional Headshot</h3>
 
-          <div className="border rounded-lg p-2 h-80 bg-gray-50 flex items-center justify-center">
+          <div className="border dark:border-gray-600 rounded-lg p-2 h-80 bg-gray-50 dark:bg-gray-900 flex items-center justify-center theme-transition">
             {generatedImage ? (
               <div className="relative w-full h-full">
                 <img
@@ -316,7 +322,7 @@ export default function HeadshotEditor({
                 />
               </div>
             ) : (
-              <div className="text-center text-gray-400">
+              <div className="text-center text-gray-400 dark:text-gray-500">
                 <ImageIcon className="w-12 h-12 mx-auto mb-4" />
                 <p>Your generated headshot will appear here</p>
               </div>
@@ -333,6 +339,42 @@ export default function HeadshotEditor({
                 <Download className="mr-2 h-4 w-4" />
                 Download Headshot
               </Button>
+              {onSaveToProfile && (
+                <Button 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={isSaving || isSaved}
+                  onClick={async () => {
+                    if (!generatedImage) return;
+                    
+                    try {
+                      setIsSaving(true);
+                      // Extract the base64 image data without the prefix
+                      const base64Image = generatedImage.split(',')[1];
+                      await onSaveToProfile(base64Image, style);
+                      setIsSaved(true);
+                    } catch (err) {
+                      setError("Failed to save headshot to profile");
+                      console.error("Error saving headshot:", err);
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                >
+                  {isSaved ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Saved to Profile
+                    </>
+                  ) : isSaving ? (
+                    "Saving..."
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save to Profile
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           )}
 

@@ -421,15 +421,19 @@ export default function AccountPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg theme-transition">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-lg font-medium">Current Plan</h3>
-                        <p className="text-blue-600 font-bold text-xl">
+                        <h3 className="text-lg font-medium dark:text-white theme-transition">Current Plan</h3>
+                        <p className="text-blue-600 dark:text-blue-400 font-bold text-xl theme-transition">
                           {planName}
                         </p>
                       </div>
-                      <Button onClick={handleManagePlan}>
+                      <Button 
+                        variant="gradient" 
+                        onClick={handleManagePlan}
+                        className="text-white dark:text-white"
+                      >
                         {subscription ? "Manage Plan" : "Upgrade Plan"}
                       </Button>
                     </div>

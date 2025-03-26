@@ -176,17 +176,48 @@ export const checkoutSessionAction = async ({
   });
 
   try {
-    const result = await api.checkouts.create({
+    // Validate UUID format required by Polar
+    if (!productPriceId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      throw new Error("Invalid product price ID format. Must be a valid UUID.");
+    }
+
+    // Creating a request object with only the required fields
+    const checkoutRequest: any = {
       productPriceId,
       successUrl,
-      customerEmail,
-      metadata,
-    });
+    };
+
+    // Only add customerEmail if it's provided and looks valid
+    if (customerEmail) {
+      // Simple validation to avoid known invalid domains
+      const invalidDomains = ['headshotmakerai.com']; // Add any known invalid domains
+      const emailDomain = customerEmail.split('@')[1];
+      
+      if (emailDomain && !invalidDomains.includes(emailDomain)) {
+        checkoutRequest.customerEmail = customerEmail;
+      }
+    }
+
+    // Only add metadata if it's provided
+    if (metadata && Object.keys(metadata).length > 0) {
+      checkoutRequest.metadata = metadata;
+    }
+
+    // Make request to Polar API
+    console.log("Sending checkout request to Polar:", checkoutRequest);
+    const result = await api.checkouts.create(checkoutRequest);
 
     console.log("Checkout session created:", result);
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in checkoutSessionAction:", error);
+    
+    // Enhance error with more details if available
+    if (error.response && error.response.data) {
+      console.error("Polar API error details:", error.response.data);
+      error.details = error.response.data;
+    }
+    
     throw error;
   }
 };
@@ -194,19 +225,30 @@ export const checkoutSessionAction = async ({
 export const checkUserSubscription = async (userId: string) => {
   const supabase = await createClient();
 
-  const { data: subscription, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .single();
+  try {
+    const { data: subscription, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .single();
 
-  if (error) {
-    console.error("Error checking subscription status:", error);
+    if (error) {
+      // If the error is "not found", it just means the user doesn't have an active subscription
+      if (error.code === "PGRST116" || error.message?.includes("not found")) {
+        return false;
+      }
+      
+      // For other errors, log them but still return false
+      console.error("Error checking subscription status:", error);
+      return false;
+    }
+
+    return !!subscription;
+  } catch (error) {
+    console.error("Unexpected error checking subscription status:", error);
     return false;
   }
-
-  return !!subscription;
 };
 
 export const manageSubscriptionAction = async (userId: string) => {
@@ -220,8 +262,14 @@ export const manageSubscriptionAction = async (userId: string) => {
     .single();
 
   if (error) {
+    // Check specifically for "not found" errors and handle them differently
+    if (error.code === "PGRST116" || error.message?.includes("not found")) {
+      console.log("No active subscription found for user:", userId);
+      return { error: "No active subscription found" };
+    }
+    
     console.error("Error checking subscription status:", error);
-    return false;
+    return { error: "Error checking subscription status" };
   }
 
   const polar = new Polar({

@@ -20,8 +20,14 @@ export default async function Dashboard() {
 
   const result = await manageSubscriptionAction(user?.id);
 
-  if (!result) {
-    return redirect("/pricing");
+  if (!result || "error" in result) {
+    // Handle specific error case for subscription not found
+    if (result?.error === "No active subscription found") {
+      return redirect("/pricing");
+    }
+    
+    // For other errors, we'll show the dashboard but with an error message
+    console.error("Error in manageSubscriptionAction:", result?.error);
   }
 
   return (

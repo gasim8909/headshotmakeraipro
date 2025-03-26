@@ -60,7 +60,7 @@ export default async function Pricing() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto justify-center">
           {result?.map((item: any) => (
             <PricingCard key={item.id} item={item} user={user} />
           ))}

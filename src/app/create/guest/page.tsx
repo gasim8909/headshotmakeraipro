@@ -26,13 +26,10 @@ import HeadshotEditor from "@/app/dashboard/components/headshot-editor";
 
 export default function GuestCreatePage() {
   const [generationsRemaining, setGenerationsRemaining] = useState(2); // Guest limit
-  const [generatedImages, setGeneratedImages] = useState<
-    { image: string; saved: boolean; style: string }[]
-  >([]);
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -52,17 +49,9 @@ export default function GuestCreatePage() {
 
   const handleGenerate = (result: { image: string; style: string }) => {
     setGenerationsRemaining((prev) => Math.max(0, prev - 1));
-    setGeneratedImages((prev) => [
-      ...prev,
-      { image: result.image, saved: false, style: result.style },
-    ]);
   };
 
-  const handleSaveHeadshot = async (
-    image: string,
-    index: number,
-    style: string,
-  ) => {
+  const handleSaveHeadshot = async (image: string, style: string) => {
     if (!user) {
       setError(
         "You need to be logged in to save headshots. Please sign up or sign in.",
@@ -73,7 +62,7 @@ export default function GuestCreatePage() {
     try {
       setError(null);
       setSuccess(null);
-      setSavingIndex(index);
+      setIsSaving(true);
 
       const supabase = createClient();
 
@@ -90,17 +79,13 @@ export default function GuestCreatePage() {
 
       if (error) throw error;
 
-      // Update the UI to show this image as saved
-      const updatedImages = [...generatedImages];
-      updatedImages[index].saved = true;
-      setGeneratedImages(updatedImages);
-
       setSuccess("Headshot saved to your profile!");
     } catch (error: any) {
       console.error("Error saving headshot:", error);
       setError(error.message || "Failed to save headshot");
+      throw error; // Re-throw so the HeadshotEditor can handle the error state
     } finally {
-      setSavingIndex(null);
+      setIsSaving(false);
     }
   };
 
@@ -132,6 +117,7 @@ export default function GuestCreatePage() {
 
         <HeadshotEditor
           onGenerate={handleGenerate}
+          onSaveToProfile={user ? handleSaveHeadshot : undefined}
           maxGenerations={2} // 2 for guests
           generationsRemaining={generationsRemaining}
           isPremium={false}
@@ -159,63 +145,6 @@ export default function GuestCreatePage() {
           </div>
         )}
 
-        {generatedImages.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-4">
-              Your Generated Headshots
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {generatedImages.map((item, index) => (
-                <div
-                  key={index}
-                  className="border rounded-lg overflow-hidden relative group"
-                >
-                  <img
-                    src={`data:image/jpeg;base64,${item.image}`}
-                    alt={`Generated Headshot ${index + 1}`}
-                    className="w-full aspect-square object-cover"
-                  />
-                  {user && !item.saved && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        onClick={() =>
-                          handleSaveHeadshot(item.image, index, item.style)
-                        }
-                        disabled={savingIndex === index}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        {savingIndex === index ? (
-                          "Saving..."
-                        ) : (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save to Profile
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  {item.saved && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Create Account Banner */}
         <Card className="bg-blue-50 border-blue-100 mt-8">

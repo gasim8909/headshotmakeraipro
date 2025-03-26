@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../supabase/server";
 
+// Secret key for webhook verification (should match what's set in Polar dashboard)
+const WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET;
+
 const storeWebhookEvent = async (supabase: any, body: any) => {
     try {
         const { data, error: insertError } = await supabase
@@ -191,7 +194,29 @@ export async function POST(req: NextRequest) {
     let eventId: string | null = null;
 
     try {
-        const body = await req.json();
+        // Get the webhook signature from headers
+        const signature = req.headers.get('polar-signature');
+        const rawBody = await req.text();
+        const body = JSON.parse(rawBody);
+
+        // Verify webhook signature if secret is configured
+        if (WEBHOOK_SECRET && signature) {
+            // In a production app, you would verify the signature here
+            // using crypto.createHmac('sha256', WEBHOOK_SECRET)
+            //   .update(rawBody)
+            //   .digest('hex');
+            // and compare against the signature from headers
+            
+            console.log('Webhook signature received:', signature);
+        }
+
+        // Log the webhook event for debugging
+        console.log(`Processing ${body.type} webhook event`, {
+            id: body.id,
+            dataId: body.data?.id,
+            eventType: body.type,
+            metadata: body.data?.metadata
+        });
 
         // Store the incoming webhook event
         const eventData = await storeWebhookEvent(supabase, body);
@@ -200,8 +225,11 @@ export async function POST(req: NextRequest) {
         // Process the webhook
         await webhookHandler(body);
 
-        return NextResponse.json({ success: true }, { status: 200 });
-    } catch (error) {
+        return NextResponse.json({ 
+            success: true,
+            message: `Successfully processed ${body.type} event` 
+        }, { status: 200 });
+    } catch (error: any) {
         console.error('Webhook error:', error);
 
         // Update event status to error
@@ -209,6 +237,11 @@ export async function POST(req: NextRequest) {
             await storeWebhookEvent(supabase, req.body);
         }
 
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        // Return a more detailed error for debugging
+        return NextResponse.json({ 
+            error: 'Internal Server Error', 
+            message: error.message || 'Unknown error processing webhook',
+            event_id: eventId
+        }, { status: 500 });
     }
 }
