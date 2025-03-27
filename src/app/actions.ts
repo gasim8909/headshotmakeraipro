@@ -84,67 +84,138 @@ export const signInAction = async (formData: FormData) => {
 };
 
 export const signInWithGoogleAction = async () => {
-  const supabase = await createClient();
-  
-  // Determine the correct site URL for different environments
-  let siteURL = process.env.NEXT_PUBLIC_SITE_URL;
-  
-  // If we're in production but the env var is localhost, override it
-  if (siteURL?.includes('localhost') && process.env.NODE_ENV === 'production') {
-    siteURL = 'https://headshotmakerpro.com';
-  }
-  
-  // Fallback to window.location.origin if available (client-side)
-  if (!siteURL && typeof window !== 'undefined') {
-    siteURL = window.location.origin;
-  }
-  
-  // Hard-coded fallback for production
-  if (!siteURL || siteURL.includes('localhost')) {
-    if (process.env.NODE_ENV === 'production') {
-      siteURL = 'https://headshotmakerpro.com';
-    } else {
-      siteURL = 'http://localhost:3000';
-    }
-  }
-  
-  console.log(`Using site URL for OAuth redirect: ${siteURL}`);
+  console.log("=== GOOGLE SIGN-IN DEBUG START ===");
   
   try {
-    // Set up the OAuth request with PKCE (Proof Key for Code Exchange)
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${siteURL}/auth/callback?redirect_to=/dashboard`,
-        skipBrowserRedirect: false, // Ensure browser redirects
-        queryParams: {
-          access_type: 'offline', // Request a refresh token
-          prompt: 'consent',      // Force consent screen
-          include_granted_scopes: 'true', // Include previously granted scopes
-        },
-        // Include any other scopes you need
-        scopes: 'email profile'
-      },
+    // Create Supabase client and log version information
+    console.log("Creating Supabase client...");
+    const supabase = await createClient();
+    
+    // Debug environment variables (without exposing full values)
+    console.log("Environment checks:", {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✓ Set (length: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "✗ Missing",
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     });
-
-    if (error) {
-      console.error("Google OAuth error:", error.message, error);
-      return encodedRedirect("error", "/sign-in", `Authentication error: ${error.message}`);
+    
+    // Determine the correct site URL for different environments
+    let siteURL = process.env.NEXT_PUBLIC_SITE_URL;
+    console.log("Initial siteURL from env:", siteURL);
+    
+    // If we're in production but the env var is localhost, override it
+    if (siteURL?.includes('localhost') && process.env.NODE_ENV === 'production') {
+      console.log("Overriding localhost URL in production environment");
+      siteURL = 'https://headshotmakerpro.com';
     }
-
-    if (!data?.url) {
-      console.error("No OAuth URL returned from Supabase");
-      return encodedRedirect("error", "/sign-in", "Authentication system error");
+    
+    // Fallback to window.location.origin if available (client-side)
+    if (!siteURL && typeof window !== 'undefined') {
+      console.log("No siteURL, falling back to window.location.origin");
+      siteURL = window.location.origin;
     }
-
-    // Log the OAuth process for debugging
-    console.log("Starting Google OAuth flow with PKCE, redirecting to:", data.url);
-
-    // Redirect to the OAuth URL
-    return redirect(data.url);
+    
+    // Hard-coded fallback for production
+    if (!siteURL || siteURL.includes('localhost')) {
+      if (process.env.NODE_ENV === 'production') {
+        console.log("No valid siteURL, using production fallback");
+        siteURL = 'https://headshotmakerpro.com';
+      } else {
+        console.log("No valid siteURL, using development fallback");
+        siteURL = 'http://localhost:3000';
+      }
+    }
+    
+    console.log(`Using site URL for OAuth redirect: ${siteURL}`);
+    
+    const redirectUrl = `${siteURL}/auth/callback?redirect_to=/dashboard`;
+    console.log("Full redirect URL:", redirectUrl);
+    
+    try {
+      // Set up the OAuth request with PKCE (Proof Key for Code Exchange)
+      console.log("Preparing OAuth request parameters...");
+      const oauthParams = {
+        provider: 'google' as const, // Type assertion to make TypeScript happy
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: false, // Ensure browser redirects
+          queryParams: {
+            access_type: 'offline', // Request a refresh token
+            prompt: 'consent',      // Force consent screen
+            include_granted_scopes: 'true', // Include previously granted scopes
+          },
+          scopes: 'email profile'
+        },
+      };
+      
+      console.log("Calling Supabase auth.signInWithOAuth with params:", JSON.stringify(oauthParams, null, 2));
+      const { data, error } = await supabase.auth.signInWithOAuth(oauthParams);
+      
+      if (error) {
+        console.error("Google OAuth error details:", {
+          code: error.code,
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          stack: error.stack?.split("\n").slice(0, 3).join("\n") // First 3 lines of stack
+        });
+        
+        return encodedRedirect("error", "/sign-in", `Authentication error: ${error.message}`);
+      }
+      
+      if (!data?.url) {
+        console.error("No OAuth URL returned from Supabase");
+        return encodedRedirect("error", "/sign-in", "Authentication system error");
+      }
+      
+      // Log the OAuth process for debugging
+      console.log("OAuth URL received:", data.url.substring(0, 100) + "...");
+      console.log("Starting Google OAuth flow with PKCE, redirecting to URL");
+      console.log("=== GOOGLE SIGN-IN DEBUG END ===");
+      
+      // Redirect to the OAuth URL
+      return redirect(data.url);
+    } catch (innerError) {
+      console.error("Error during OAuth setup:", innerError);
+      
+      // More detailed error logging
+      if (innerError instanceof Error) {
+        console.error({
+          name: innerError.name,
+          message: innerError.message,
+          stack: innerError.stack?.split("\n").slice(0, 5).join("\n"),
+        });
+        
+        // Specific error handling for common issues
+        if (innerError.message.includes("network")) {
+          return encodedRedirect("error", "/sign-in", "Network error during authentication. Please check your connection.");
+        }
+        
+        if (innerError.message.includes("CORS")) {
+          return encodedRedirect("error", "/sign-in", "Cross-origin error during authentication. This might be a configuration issue.");
+        }
+      }
+      
+      throw innerError; // Rethrow to outer catch block for general handling
+    }
   } catch (e) {
+    console.error("=== GOOGLE SIGN-IN CRITICAL ERROR ===");
     console.error("Unexpected error in Google OAuth flow:", e);
-    return encodedRedirect("error", "/sign-in", "Unexpected error during authentication");
+    
+    // Enhanced error logging
+    const errorInfo = e instanceof Error 
+      ? {
+          name: e.name,
+          message: e.message,
+          stack: e.stack?.split("\n").slice(0, 5).join("\n"),
+          cause: e.cause ? String(e.cause) : undefined
+        }
+      : String(e);
+      
+    console.error("Error details:", errorInfo);
+    console.log("=== GOOGLE SIGN-IN DEBUG END ===");
+    
+    return encodedRedirect("error", "/sign-in", "Unexpected error during authentication. Please try again later.");
   }
 };
 
