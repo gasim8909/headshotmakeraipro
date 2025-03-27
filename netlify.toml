@@ -1,12 +1,22 @@
 [build]
-  command = "npm run build"
-  publish = ".next"
+  command = "node build-check.js && npm run clean && npm run build"
+  publish = "out"  # Changed to "out" because we're using "export" in next.config.js
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
-  NODE_VERSION = "18"
+  NODE_VERSION = "18.17.0"  # Specific Node.js version compatible with Next.js 14
   # Force production URL for authentication redirects
   NEXT_PUBLIC_SITE_URL = "https://headshotmakerpro.com"
+  NODE_ENV = "production"  # Ensure production mode
+
+# Cache directories to speed up builds
+[[plugins]]
+  package = "netlify-plugin-cache"
+  [plugins.inputs]
+    paths = [
+      ".next/cache",       # Next.js cache
+      "node_modules/.cache" # Node modules cache
+    ]
 
 # Production context: all deploys from the Production branch set in your site's
 # deploy settings will inherit these settings.
@@ -26,5 +36,6 @@
   NEXT_PUBLIC_SITE_URL = "https://headshotmakerpro.com" 
   NODE_ENV = "production"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Disable Next.js plugin since we're using static export
+# [[plugins]]
+#  package = "@netlify/plugin-nextjs"
