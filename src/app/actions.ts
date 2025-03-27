@@ -86,22 +86,45 @@ export const signInAction = async (formData: FormData) => {
 export const signInWithGoogleAction = async () => {
   const supabase = await createClient();
   
+  // Get the origin for the redirect URL
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || 
+                (typeof window !== 'undefined' ? window.location.origin : '');
+  
+  // Make sure we have a valid origin
+  if (!origin) {
+    console.error("Missing site URL for Google OAuth redirect");
+    return encodedRedirect("error", "/sign-in", "Server configuration error: Missing site URL");
+  }
+  
+  // Set up the OAuth request with specific options for better session handling
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: `${origin}/auth/callback?redirect_to=/dashboard`,
       queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
+        access_type: 'offline', // Request a refresh token
+        prompt: 'consent',      // Force consent screen
+        include_granted_scopes: 'true', // Include previously granted scopes
       },
+      // Include any other scopes you need
+      scopes: 'email profile',
     },
   });
 
   if (error) {
-    console.error("Google OAuth error:", error);
-    return encodedRedirect("error", "/sign-in", error.message);
+    console.error("Google OAuth error:", error.message, error);
+    return encodedRedirect("error", "/sign-in", `Authentication error: ${error.message}`);
   }
 
+  if (!data?.url) {
+    console.error("No OAuth URL returned from Supabase");
+    return encodedRedirect("error", "/sign-in", "Authentication system error");
+  }
+
+  // Log the OAuth process for debugging
+  console.log("Starting Google OAuth flow, redirecting to:", data.url);
+
+  // Redirect to the OAuth URL
   return redirect(data.url);
 };
 

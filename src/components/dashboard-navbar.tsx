@@ -5,7 +5,9 @@ import { createClient } from "../../supabase/client";
 import { Button } from "./ui/button";
 import { Image as ImageIcon, Sparkles } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
-import UserProfile from "./user-profile";
+// Import directly since this is already a client component
+import dynamic from "next/dynamic";
+const UserProfile = dynamic(() => import("./user-profile"), { ssr: false });
 import { useRouter, usePathname } from "next/navigation";
 import { Badge } from "./ui/badge";
 

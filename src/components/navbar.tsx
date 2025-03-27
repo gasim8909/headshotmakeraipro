@@ -3,9 +3,12 @@ import { createClient } from "../../supabase/server";
 import { Button } from "./ui/button";
 import { Sparkles } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
-import UserProfile from "./user-profile";
 import { Badge } from "./ui/badge";
 import { headers } from "next/headers";
+import dynamic from "next/dynamic";
+
+// Import UserProfile as a client component
+const ClientUserProfile = dynamic(() => import("./user-profile"), { ssr: false });
 
 export default async function Navbar() {
   const supabase = createClient();
@@ -74,7 +77,7 @@ export default async function Navbar() {
                 </Link>
               )}
               <ThemeSwitcher />
-              <UserProfile />
+              <ClientUserProfile />
             </>
           ) : (
             <>

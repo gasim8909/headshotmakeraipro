@@ -4,33 +4,71 @@ import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
+  
+  // Add the pathname to the headers so it can be accessed in server components
+  res.headers.set('x-pathname', req.nextUrl.pathname)
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll().map(({ name, value }) => ({
-            name,
-            value,
-          }))
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return req.cookies.getAll().map(({ name, value }) => ({
+              name,
+              value,
+            }))
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              req.cookies.set({
+                name, 
+                value,
+                ...options
+              })
+              res.cookies.set({
+                name, 
+                value,
+                ...options
+              })
+            })
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set(name, value)
-            res.cookies.set(name, value, options)
-          })
-        },
-      },
+      }
+    )
+
+    // Refresh session if expired - required for Server Components
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error) {
+      console.error('Auth session error:', error)
+    } else if (session) {
+      // Log successful session retrieval for debugging
+      console.log('Session found for user:', session.user.id)
+      
+      // Handle path-specific authentication checks
+      const path = req.nextUrl.pathname
+      
+      // Protect dashboard routes that aren't guest routes
+      if (path.startsWith('/dashboard') && 
+          !path.startsWith('/dashboard/guest') && 
+          !session) {
+        console.log('Protected route access attempt without session, redirecting to /sign-in')
+        return NextResponse.redirect(new URL('/sign-in', req.url))
+      }
+    } else {
+      console.log('No active session found in middleware')
+      
+      // Check if we're trying to access a protected route
+      const path = req.nextUrl.pathname
+      if (path.startsWith('/dashboard') && !path.startsWith('/dashboard/guest')) {
+        console.log('Protected route access attempt, redirecting to /sign-in')
+        return NextResponse.redirect(new URL('/sign-in', req.url))
+      }
     }
-  )
-
-  // Refresh session if expired - required for Server Components
-  const { data: { session }, error } = await supabase.auth.getSession()
-
-  if (error) {
-    console.error('Auth session error:', error)
+  } catch (e) {
+    console.error('Middleware error:', e)
   }
 
   return res
