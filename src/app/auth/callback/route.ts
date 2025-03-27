@@ -6,10 +6,19 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const redirect_to = requestUrl.searchParams.get("redirect_to");
 
+  // Determine the correct site URL/origin for different environments
+  let origin = requestUrl.origin;
+  
+  // If we're in production but on localhost, override it
+  if (origin.includes('localhost') && process.env.NODE_ENV === 'production') {
+    origin = 'https://headshotmakerpro.com';
+    console.log("Overriding localhost origin to production URL in callback");
+  }
+
   if (!code) {
     console.error("No code parameter found in callback URL");
     return NextResponse.redirect(
-      new URL("/sign-in?error=Missing+authentication+code", requestUrl.origin)
+      new URL("/sign-in?error=Missing+authentication+code", origin)
     );
   }
 
@@ -22,14 +31,14 @@ export async function GET(request: Request) {
     if (error) {
       console.error("Error exchanging code for session:", error);
       return NextResponse.redirect(
-        new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, requestUrl.origin)
+        new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, origin)
       );
     }
     
     if (!data.session) {
       console.error("No session data returned from exchangeCodeForSession");
       return NextResponse.redirect(
-        new URL("/sign-in?error=Authentication+failed", requestUrl.origin)
+        new URL("/sign-in?error=Authentication+failed", origin)
       );
     }
     
@@ -64,14 +73,15 @@ export async function GET(request: Request) {
     const redirectTo = redirect_to || "/dashboard";
     
     // Create response with redirect
-    const response = NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+    const response = NextResponse.redirect(new URL(redirectTo, origin));
+    console.log("Redirecting after successful authentication to:", new URL(redirectTo, origin).toString());
     
     return response;
     
   } catch (err) {
     console.error("Unexpected error in callback handler:", err);
     return NextResponse.redirect(
-      new URL("/sign-in?error=Unexpected+authentication+error", requestUrl.origin)
+      new URL("/sign-in?error=Unexpected+authentication+error", origin)
     );
   }
 }

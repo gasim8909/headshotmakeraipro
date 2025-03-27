@@ -86,21 +86,35 @@ export const signInAction = async (formData: FormData) => {
 export const signInWithGoogleAction = async () => {
   const supabase = await createClient();
   
-  // Get the origin for the redirect URL
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 
-                (typeof window !== 'undefined' ? window.location.origin : '');
+  // Determine the correct site URL for different environments
+  let siteURL = process.env.NEXT_PUBLIC_SITE_URL;
   
-  // Make sure we have a valid origin
-  if (!origin) {
-    console.error("Missing site URL for Google OAuth redirect");
-    return encodedRedirect("error", "/sign-in", "Server configuration error: Missing site URL");
+  // If we're in production but the env var is localhost, override it
+  if (siteURL?.includes('localhost') && process.env.NODE_ENV === 'production') {
+    siteURL = 'https://headshotmakerpro.com';
   }
+  
+  // Fallback to window.location.origin if available (client-side)
+  if (!siteURL && typeof window !== 'undefined') {
+    siteURL = window.location.origin;
+  }
+  
+  // Hard-coded fallback for production
+  if (!siteURL || siteURL.includes('localhost')) {
+    if (process.env.NODE_ENV === 'production') {
+      siteURL = 'https://headshotmakerpro.com';
+    } else {
+      siteURL = 'http://localhost:3000';
+    }
+  }
+  
+  console.log(`Using site URL for OAuth redirect: ${siteURL}`);
   
   // Set up the OAuth request with specific options for better session handling
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${origin}/auth/callback?redirect_to=/dashboard`,
+      redirectTo: `${siteURL}/auth/callback?redirect_to=/dashboard`,
       queryParams: {
         access_type: 'offline', // Request a refresh token
         prompt: 'consent',      // Force consent screen
