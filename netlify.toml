@@ -1,5 +1,5 @@
 [build]
-  command = "node build-check.js && npm run clean && npm run build"
+  command = "node build-check.js && npm run build"
   publish = "out"  # Changed to "out" because we're using "export" in next.config.js
 
 [build.environment]
@@ -8,15 +8,6 @@
   # Force production URL for authentication redirects
   NEXT_PUBLIC_SITE_URL = "https://headshotmakerpro.com"
   NODE_ENV = "production"  # Ensure production mode
-
-# Cache directories to speed up builds
-[[plugins]]
-  package = "netlify-plugin-cache"
-  [plugins.inputs]
-    paths = [
-      ".next/cache",       # Next.js cache
-      "node_modules/.cache" # Node modules cache
-    ]
 
 # Production context: all deploys from the Production branch set in your site's
 # deploy settings will inherit these settings.
