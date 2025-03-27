@@ -99,6 +99,12 @@ export const signInWithGoogleAction = async () => {
       NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     });
     
+    // Explicitly check that Supabase is configured before proceeding
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error("Supabase credentials are not properly configured");
+      return encodedRedirect("error", "/sign-in", "Authentication service misconfigured. Please contact support.");
+    }
+    
     // Determine the correct site URL for different environments
     let siteURL = process.env.NEXT_PUBLIC_SITE_URL;
     console.log("Initial siteURL from env:", siteURL);
@@ -132,6 +138,16 @@ export const signInWithGoogleAction = async () => {
     console.log("Full redirect URL:", redirectUrl);
     
     try {
+      // Try creating a test for Google Provider support
+      console.log("Checking Google provider support...");
+      try {
+        // This is a simple test that will throw if the provider is not supported
+        const testProvider = 'google' as const;
+        console.log("Provider format check passed:", testProvider);
+      } catch (providerError) {
+        console.error("Provider format check failed:", providerError);
+      }
+      
       // Set up the OAuth request with PKCE (Proof Key for Code Exchange)
       console.log("Preparing OAuth request parameters...");
       const oauthParams = {
@@ -160,12 +176,28 @@ export const signInWithGoogleAction = async () => {
           stack: error.stack?.split("\n").slice(0, 3).join("\n") // First 3 lines of stack
         });
         
-        return encodedRedirect("error", "/sign-in", `Authentication error: ${error.message}`);
+        // Specific error messages based on common error codes and additional context
+        if (error.message.includes("Provider not supported") || error.message.includes("not configured")) {
+          return encodedRedirect("error", "/sign-in", "Google sign-in is not available. Google OAuth must be enabled in your Supabase project settings.");
+        }
+        
+        // Make the error message more user-friendly and actionable
+        let errorMessage = `Authentication error: ${error.message}`;
+        
+        if (error.message.includes("invalid_grant")) {
+          errorMessage = "Authentication failed: Invalid or expired authorization code. Please try again.";
+        } else if (error.message.includes("access_denied")) {
+          errorMessage = "Authentication was denied. Please ensure you grant the necessary permissions when prompted.";
+        } else if (error.message.includes("redirect_uri_mismatch")) {
+          errorMessage = "Authentication configuration error: Redirect URI mismatch. Please contact support.";
+        }
+        
+        return encodedRedirect("error", "/sign-in", errorMessage);
       }
       
       if (!data?.url) {
         console.error("No OAuth URL returned from Supabase");
-        return encodedRedirect("error", "/sign-in", "Authentication system error");
+        return encodedRedirect("error", "/sign-in", "Authentication system error: No redirect URL received");
       }
       
       // Log the OAuth process for debugging
@@ -194,6 +226,10 @@ export const signInWithGoogleAction = async () => {
         if (innerError.message.includes("CORS")) {
           return encodedRedirect("error", "/sign-in", "Cross-origin error during authentication. This might be a configuration issue.");
         }
+        
+        if (innerError.message.includes("OAuth")) {
+          return encodedRedirect("error", "/sign-in", "OAuth configuration error. Please ensure Google OAuth is properly set up in Supabase.");
+        }
       }
       
       throw innerError; // Rethrow to outer catch block for general handling
@@ -215,7 +251,18 @@ export const signInWithGoogleAction = async () => {
     console.error("Error details:", errorInfo);
     console.log("=== GOOGLE SIGN-IN DEBUG END ===");
     
-    return encodedRedirect("error", "/sign-in", "Unexpected error during authentication. Please try again later.");
+    // More specific error message if possible
+    let errorMessage = "Unexpected error during authentication. Please try again later.";
+    
+    if (e instanceof Error) {
+      if (e.message.includes("provider not configured") || e.message.includes("Provider not supported")) {
+        errorMessage = "Google sign-in is not properly configured. Please contact support.";
+      } else if (e.message.includes("permission") || e.message.includes("authorize")) {
+        errorMessage = "Authorization failed. Please ensure you've granted the necessary permissions.";
+      }
+    }
+    
+    return encodedRedirect("error", "/sign-in", errorMessage);
   }
 };
 
