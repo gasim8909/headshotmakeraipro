@@ -5,10 +5,7 @@ import { Sparkles } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
 import { Badge } from "./ui/badge";
 import { headers } from "next/headers";
-import dynamic from "next/dynamic";
-
-// Import UserProfile as a client component
-const ClientUserProfile = dynamic(() => import("./user-profile"), { ssr: false });
+import ClientUserProfile from "./client-user-profile";
 
 export default async function Navbar() {
   const supabase = createClient();

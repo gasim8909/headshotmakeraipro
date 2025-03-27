@@ -5,9 +5,7 @@ import { createClient } from "../../supabase/client";
 import { Button } from "./ui/button";
 import { Image as ImageIcon, Sparkles } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
-// Import directly since this is already a client component
-import dynamic from "next/dynamic";
-const UserProfile = dynamic(() => import("./user-profile"), { ssr: false });
+import ClientUserProfile from "./client-user-profile";
 import { useRouter, usePathname } from "next/navigation";
 import { Badge } from "./ui/badge";
 
@@ -51,7 +49,7 @@ export default function DashboardNavbar({
                 </Link>
               )}
               <ThemeSwitcher />
-              <UserProfile />
+              <ClientUserProfile />
             </>
           )}
         </div>
