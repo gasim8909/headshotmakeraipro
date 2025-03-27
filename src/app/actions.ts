@@ -105,32 +105,12 @@ export const signInWithGoogleAction = async () => {
       return encodedRedirect("error", "/sign-in", "Authentication service misconfigured. Please contact support.");
     }
     
-    // Determine the correct site URL for different environments
-    let siteURL = process.env.NEXT_PUBLIC_SITE_URL;
-    console.log("Initial siteURL from env:", siteURL);
-    
-    // If we're in production but the env var is localhost, override it
-    if (siteURL?.includes('localhost') && process.env.NODE_ENV === 'production') {
-      console.log("Overriding localhost URL in production environment");
-      siteURL = 'https://headshotmakerpro.com';
-    }
-    
-    // Fallback to window.location.origin if available (client-side)
-    if (!siteURL && typeof window !== 'undefined') {
-      console.log("No siteURL, falling back to window.location.origin");
-      siteURL = window.location.origin;
-    }
-    
-    // Hard-coded fallback for production
-    if (!siteURL || siteURL.includes('localhost')) {
-      if (process.env.NODE_ENV === 'production') {
-        console.log("No valid siteURL, using production fallback");
-        siteURL = 'https://headshotmakerpro.com';
-      } else {
-        console.log("No valid siteURL, using development fallback");
-        siteURL = 'http://localhost:3000';
-      }
-    }
+    // ALWAYS use the main domain for production environments to prevent redirect issues with preview deployments
+    const siteURL = process.env.NODE_ENV === 'production' 
+      ? 'https://headshotmakerpro.com' 
+      : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
+      
+    console.log("Using site URL for OAuth:", siteURL);
     
     console.log(`Using site URL for OAuth redirect: ${siteURL}`);
     

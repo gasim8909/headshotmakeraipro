@@ -31,14 +31,12 @@ export async function GET(request: Request) {
     const error = requestUrl.searchParams.get("error");
     const error_description = requestUrl.searchParams.get("error_description");
     
-    // Determine the correct site URL/origin for different environments
-    let origin = requestUrl.origin;
-    
-    // If we're in production but on localhost, override it
-    if (origin.includes('localhost') && process.env.NODE_ENV === 'production') {
-      origin = 'https://headshotmakerpro.com';
-      console.log("Overriding localhost origin to production URL in callback");
-    }
+    // ALWAYS use the main domain for production environments to prevent redirect issues with preview deployments
+    const origin = process.env.NODE_ENV === 'production' 
+      ? 'https://headshotmakerpro.com' 
+      : requestUrl.origin;
+      
+    console.log("Using origin for redirect:", origin);
 
     // Check for OAuth error
     if (error) {

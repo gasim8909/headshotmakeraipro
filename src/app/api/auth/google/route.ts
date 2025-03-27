@@ -10,10 +10,11 @@ export async function GET(request: NextRequest) {
   
   try {
     const redirectToParam = request.nextUrl.searchParams.get("redirect_to") || "/dashboard";
-    const siteURL = process.env.NEXT_PUBLIC_SITE_URL || 
-                   (process.env.NODE_ENV === "production" 
+    
+    // ALWAYS use the main domain for production environments to prevent redirect issues with preview deployments
+    const siteURL = process.env.NODE_ENV === "production" 
                      ? "https://headshotmakerpro.com" 
-                     : "http://localhost:3000");
+                     : (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
     
     console.log("Environment:", { 
       NODE_ENV: process.env.NODE_ENV,
