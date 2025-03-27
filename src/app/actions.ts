@@ -110,36 +110,42 @@ export const signInWithGoogleAction = async () => {
   
   console.log(`Using site URL for OAuth redirect: ${siteURL}`);
   
-  // Set up the OAuth request with specific options for better session handling
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${siteURL}/auth/callback?redirect_to=/dashboard`,
-      queryParams: {
-        access_type: 'offline', // Request a refresh token
-        prompt: 'consent',      // Force consent screen
-        include_granted_scopes: 'true', // Include previously granted scopes
+  try {
+    // Set up the OAuth request with PKCE (Proof Key for Code Exchange)
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${siteURL}/auth/callback?redirect_to=/dashboard`,
+        skipBrowserRedirect: false, // Ensure browser redirects
+        queryParams: {
+          access_type: 'offline', // Request a refresh token
+          prompt: 'consent',      // Force consent screen
+          include_granted_scopes: 'true', // Include previously granted scopes
+        },
+        // Include any other scopes you need
+        scopes: 'email profile'
       },
-      // Include any other scopes you need
-      scopes: 'email profile',
-    },
-  });
+    });
 
-  if (error) {
-    console.error("Google OAuth error:", error.message, error);
-    return encodedRedirect("error", "/sign-in", `Authentication error: ${error.message}`);
+    if (error) {
+      console.error("Google OAuth error:", error.message, error);
+      return encodedRedirect("error", "/sign-in", `Authentication error: ${error.message}`);
+    }
+
+    if (!data?.url) {
+      console.error("No OAuth URL returned from Supabase");
+      return encodedRedirect("error", "/sign-in", "Authentication system error");
+    }
+
+    // Log the OAuth process for debugging
+    console.log("Starting Google OAuth flow with PKCE, redirecting to:", data.url);
+
+    // Redirect to the OAuth URL
+    return redirect(data.url);
+  } catch (e) {
+    console.error("Unexpected error in Google OAuth flow:", e);
+    return encodedRedirect("error", "/sign-in", "Unexpected error during authentication");
   }
-
-  if (!data?.url) {
-    console.error("No OAuth URL returned from Supabase");
-    return encodedRedirect("error", "/sign-in", "Authentication system error");
-  }
-
-  // Log the OAuth process for debugging
-  console.log("Starting Google OAuth flow, redirecting to:", data.url);
-
-  // Redirect to the OAuth URL
-  return redirect(data.url);
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

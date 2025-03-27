@@ -2,10 +2,21 @@ import { createClient } from "../../../../supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
+  // Get URL and params from the request
   const requestUrl = new URL(request.url);
+  
+  // Log all searchParams for debugging
+  const paramsObj: Record<string, string> = {};
+  requestUrl.searchParams.forEach((value, key) => {
+    paramsObj[key] = key === 'code' ? `${value.substring(0, 5)}...` : value; // Only show part of code for security
+  });
+  console.log("Auth callback received with params:", paramsObj);
+  
   const code = requestUrl.searchParams.get("code");
   const redirect_to = requestUrl.searchParams.get("redirect_to");
-
+  const error = requestUrl.searchParams.get("error");
+  const error_description = requestUrl.searchParams.get("error_description");
+  
   // Determine the correct site URL/origin for different environments
   let origin = requestUrl.origin;
   
@@ -13,6 +24,14 @@ export async function GET(request: Request) {
   if (origin.includes('localhost') && process.env.NODE_ENV === 'production') {
     origin = 'https://headshotmakerpro.com';
     console.log("Overriding localhost origin to production URL in callback");
+  }
+
+  // Check for OAuth error
+  if (error) {
+    console.error(`Auth provider error: ${error}`, error_description);
+    return NextResponse.redirect(
+      new URL(`/sign-in?error=${encodeURIComponent(error_description || error)}`, origin)
+    );
   }
 
   if (!code) {
@@ -25,7 +44,10 @@ export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     
-    // Exchange the code for a session
+    // Log that we're attempting to exchange the code
+    console.log("Attempting to exchange auth code for session");
+    
+    // Exchange the code for a session - Supabase handles PKCE internally
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (error) {
