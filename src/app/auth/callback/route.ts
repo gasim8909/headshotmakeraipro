@@ -1,152 +1,123 @@
 import { createClient } from "../../../../supabase/server";
 import { NextResponse } from "next/server";
 
+// Mark this route as dynamic to ensure it runs server-side
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
-  console.log("=== AUTH CALLBACK DEBUG START ===");
-  console.log("Callback handler timestamp:", new Date().toISOString());
+  console.log("=== AUTH CALLBACK HANDLER STARTED ===");
   
   try {
-    console.log("Auth callback handler invoked");
-    
-    // Get URL and params from the request
+    // Parse the request URL
     const requestUrl = new URL(request.url);
+    console.log("Auth callback URL:", requestUrl.toString());
     
-    // Log all searchParams for debugging
-    const paramsObj: Record<string, string> = {};
-    requestUrl.searchParams.forEach((value, key) => {
-      paramsObj[key] = key === 'code' ? `${value.substring(0, 5)}...` : value; // Only show part of code for security
-    });
-    console.log("Auth callback received with params:", paramsObj);
-    console.log("Full callback URL (without code):", request.url.replace(/code=[^&]+/, "code=REDACTED"));
-    
-    // Log environment details 
-    console.log("Environment check:", {
-      NODE_ENV: process.env.NODE_ENV,
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing",
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    });
-    
+    // Get authentication code
     const code = requestUrl.searchParams.get("code");
-    const redirect_to = requestUrl.searchParams.get("redirect_to");
+    console.log("Auth code present:", code ? "Yes" : "No");
+    
+    // Get error information if any
     const error = requestUrl.searchParams.get("error");
     const error_description = requestUrl.searchParams.get("error_description");
     
-    // ALWAYS use the main domain for production environments to prevent redirect issues with preview deployments
-    const origin = process.env.NODE_ENV === 'production' 
+    // Set the base URL for redirects
+    const baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://headshotmakerpro.com' 
-      : requestUrl.origin;
-      
-    console.log("Using origin for redirect:", origin);
-
-    // Check for OAuth error
+      : 'http://localhost:3000';
+    console.log("Using base URL for redirects:", baseUrl);
+    
+    // Handle OAuth errors
     if (error) {
-      console.error(`Auth provider error: ${error}`, error_description);
+      console.error("OAuth provider error:", error, error_description);
       return NextResponse.redirect(
-        new URL(`/sign-in?error=${encodeURIComponent(error_description || error)}`, origin)
+        new URL(`/sign-in?type=error&message=${encodeURIComponent(error_description || error)}`, baseUrl)
       );
     }
-
+    
+    // Ensure we have an auth code
     if (!code) {
-      console.error("No code parameter found in callback URL");
+      console.error("No authentication code found in callback URL");
       return NextResponse.redirect(
-        new URL("/sign-in?error=Missing+authentication+code", origin)
+        new URL("/sign-in?type=error&message=Missing+authentication+code", baseUrl)
       );
     }
-
-    const supabase = await createClient();
     
-    // Log that we're attempting to exchange the code
-    console.log("Attempting to exchange auth code for session");
+    // Create Supabase client
+    const supabase = createClient();
     
-    // Exchange the code for a session - Supabase handles PKCE internally
+    // Exchange the code for a session
+    console.log("Exchanging auth code for session...");
     const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
     
     if (sessionError) {
-      console.error("Error exchanging code for session:", sessionError);
+      console.error("Session exchange error:", sessionError.message);
+      console.error("Session error details:", sessionError);
       return NextResponse.redirect(
-        new URL(`/sign-in?error=${encodeURIComponent(sessionError.message)}`, origin)
+        new URL(`/sign-in?type=error&message=${encodeURIComponent(sessionError.message)}`, baseUrl)
       );
     }
     
     if (!data.session) {
-      console.error("No session data returned from exchangeCodeForSession");
+      console.error("No session returned from code exchange");
       return NextResponse.redirect(
-        new URL("/sign-in?error=Authentication+failed", origin)
+        new URL("/sign-in?type=error&message=Authentication+failed", baseUrl)
       );
     }
     
-    // Log successful authentication
-    console.log("Session established successfully for user:", data.session.user.id);
+    console.log("Authentication successful for user:", data.session.user.id);
+    console.log("User email:", data.session.user.email);
     
-    // Explicitly update user data in profiles table if needed
+    // Create or update user profile with more details if available
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      // Get user details from the session
+      const { user } = data.session;
+      const userData = {
+        id: user.id,
+        user_id: user.id,
+        email: user.email,
+        updated_at: new Date().toISOString()
+      };
       
-      if (userData.user) {
-        console.log("Attempting to update user profile for:", userData.user.id);
-        
-        const { error: profileError } = await supabase.from("users").upsert({
-          id: userData.user.id,
-          email: userData.user.email,
-          user_id: userData.user.id,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
+      // Add name if available from user metadata
+      if (user.user_metadata && user.user_metadata.full_name) {
+        Object.assign(userData, { 
+          full_name: user.user_metadata.full_name,
+          name: user.user_metadata.full_name
         });
-        
-        if (profileError) {
-          console.error("Error updating user profile:", profileError);
-        } else {
-          console.log("User profile updated successfully");
-        }
-      } else {
-        console.log("No user data available to update profile");
       }
-    } catch (profileErr) {
-      console.error("Error updating user profile:", profileErr);
-      // Continue with login despite profile update errors
-    }
-    
-    // URL to redirect to after sign in process completes
-    const redirectTo = redirect_to || "/dashboard";
-    
-    // Create response with redirect
-    const response = NextResponse.redirect(new URL(redirectTo, origin));
-    console.log("Redirecting after successful authentication to:", new URL(redirectTo, origin).toString());
-    console.log("=== AUTH CALLBACK DEBUG END ===");
-    
-    return response;
-    
-  } catch (err) {
-    console.error("=== AUTH CALLBACK CRITICAL ERROR ===");
-    console.error("Unexpected error in callback handler:", err);
-    
-    // Enhanced error logging
-    const errorInfo = err instanceof Error 
-      ? {
-          name: err.name,
-          message: err.message,
-          stack: err.stack?.split("\n").slice(0, 5).join("\n"),
-          cause: err.cause ? String(err.cause) : undefined
-        }
-      : String(err);
       
-    console.error("Error details:", errorInfo);
-    console.log("=== AUTH CALLBACK DEBUG END ===");
-    
-    // Determine redirect URL based on potential error details
-    let errorMessage = "Unexpected authentication error";
-    if (err instanceof Error) {
-      if (err.message.includes("PKCE")) {
-        errorMessage = "Authentication code verification failed";
-      } else if (err.message.includes("expired")) {
-        errorMessage = "Authentication code expired";
+      console.log("Upserting user profile with data:", userData);
+      
+      const { error: upsertError } = await supabase.from("users").upsert(
+        userData, 
+        { onConflict: 'id' }
+      );
+      
+      if (upsertError) {
+        console.error("Profile update error (non-fatal):", upsertError);
+      } else {
+        console.log("User profile updated successfully");
       }
+    } catch (profileError) {
+      console.error("Profile update error (non-fatal):", profileError);
+      // Continue with login even if profile update fails
     }
     
+    // Redirect to dashboard
+    console.log("Redirecting to dashboard");
+    console.log("=== AUTH CALLBACK HANDLER COMPLETED SUCCESSFULLY ===");
+    return NextResponse.redirect(new URL("/dashboard", baseUrl));
+    
+  } catch (error) {
+    console.error("=== AUTH CALLBACK CRITICAL ERROR ===", error);
+    
+    // Provide simple error message
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://headshotmakerpro.com' 
+      : 'http://localhost:3000';
+      
     return NextResponse.redirect(
-      new URL(`/sign-in?error=${encodeURIComponent(errorMessage)}`, 
-              process.env.NODE_ENV === 'production' ? 'https://headshotmakerpro.com' : 'http://localhost:3000')
+      new URL("/sign-in?type=error&message=Authentication+failed.+Please+try+again", baseUrl)
     );
   }
 }

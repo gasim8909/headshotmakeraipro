@@ -1,9 +1,9 @@
 [build]
   command = "node build-check.js && npm run build"
-  publish = "out"  # Changed to "out" because we're using "export" in next.config.js
+  publish = ".next"  # Changed to .next for server-side rendering
 
 [build.environment]
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
   NODE_VERSION = "18.17.0"  # Specific Node.js version compatible with Next.js 14
   # Force production URL for authentication redirects
   NEXT_PUBLIC_SITE_URL = "https://headshotmakerpro.com"
@@ -27,6 +27,6 @@
   NEXT_PUBLIC_SITE_URL = "https://headshotmakerpro.com" 
   NODE_ENV = "production"
 
-# Disable Next.js plugin since we're using static export
-# [[plugins]]
-#  package = "@netlify/plugin-nextjs"
+# Enable Next.js plugin for server-side rendering
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

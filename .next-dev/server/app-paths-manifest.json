@@ -1,1 +1,10 @@
-{}
+{
+  "/api/manage-subscription/route": "app/api/manage-subscription/route.js",
+  "/api/check-subscription/route": "app/api/check-subscription/route.js",
+  "/page": "app/page.js",
+  "/(auth)/sign-in/page": "app/(auth)/sign-in/page.js",
+  "/pricing/page": "app/pricing/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/create/page": "app/create/page.js",
+  "/create/free/page": "app/create/free/page.js"
+}

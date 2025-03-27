@@ -10,7 +10,7 @@ export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
   const fullName = formData.get("full_name")?.toString() || "";
-  const supabase = await createClient();
+  const supabase = createClient();
 
   if (!email || !password) {
     return encodedRedirect(
@@ -69,7 +69,7 @@ export const signUpAction = async (formData: FormData) => {
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -83,172 +83,9 @@ export const signInAction = async (formData: FormData) => {
   return redirect("/dashboard");
 };
 
-export const signInWithGoogleAction = async () => {
-  console.log("=== GOOGLE SIGN-IN DEBUG START ===");
-  
-  try {
-    // Create Supabase client and log version information
-    console.log("Creating Supabase client...");
-    const supabase = await createClient();
-    
-    // Debug environment variables (without exposing full values)
-    console.log("Environment checks:", {
-      NODE_ENV: process.env.NODE_ENV,
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✓ Set (length: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "✗ Missing",
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    });
-    
-    // Explicitly check that Supabase is configured before proceeding
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error("Supabase credentials are not properly configured");
-      return encodedRedirect("error", "/sign-in", "Authentication service misconfigured. Please contact support.");
-    }
-    
-    // ALWAYS use the main domain for production environments to prevent redirect issues with preview deployments
-    const siteURL = process.env.NODE_ENV === 'production' 
-      ? 'https://headshotmakerpro.com' 
-      : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
-      
-    console.log("Using site URL for OAuth:", siteURL);
-    
-    console.log(`Using site URL for OAuth redirect: ${siteURL}`);
-    
-    const redirectUrl = `${siteURL}/auth/callback?redirect_to=/dashboard`;
-    console.log("Full redirect URL:", redirectUrl);
-    
-    try {
-      // Try creating a test for Google Provider support
-      console.log("Checking Google provider support...");
-      try {
-        // This is a simple test that will throw if the provider is not supported
-        const testProvider = 'google' as const;
-        console.log("Provider format check passed:", testProvider);
-      } catch (providerError) {
-        console.error("Provider format check failed:", providerError);
-      }
-      
-      // Set up the OAuth request with PKCE (Proof Key for Code Exchange)
-      console.log("Preparing OAuth request parameters...");
-      const oauthParams = {
-        provider: 'google' as const, // Type assertion to make TypeScript happy
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false, // Ensure browser redirects
-          queryParams: {
-            access_type: 'offline', // Request a refresh token
-            prompt: 'consent',      // Force consent screen
-            include_granted_scopes: 'true', // Include previously granted scopes
-          },
-          scopes: 'email profile'
-        },
-      };
-      
-      console.log("Calling Supabase auth.signInWithOAuth with params:", JSON.stringify(oauthParams, null, 2));
-      const { data, error } = await supabase.auth.signInWithOAuth(oauthParams);
-      
-      if (error) {
-        console.error("Google OAuth error details:", {
-          code: error.code,
-          message: error.message,
-          status: error.status,
-          name: error.name,
-          stack: error.stack?.split("\n").slice(0, 3).join("\n") // First 3 lines of stack
-        });
-        
-        // Specific error messages based on common error codes and additional context
-        if (error.message.includes("Provider not supported") || error.message.includes("not configured")) {
-          return encodedRedirect("error", "/sign-in", "Google sign-in is not available. Google OAuth must be enabled in your Supabase project settings.");
-        }
-        
-        // Make the error message more user-friendly and actionable
-        let errorMessage = `Authentication error: ${error.message}`;
-        
-        if (error.message.includes("invalid_grant")) {
-          errorMessage = "Authentication failed: Invalid or expired authorization code. Please try again.";
-        } else if (error.message.includes("access_denied")) {
-          errorMessage = "Authentication was denied. Please ensure you grant the necessary permissions when prompted.";
-        } else if (error.message.includes("redirect_uri_mismatch")) {
-          errorMessage = "Authentication configuration error: Redirect URI mismatch. Please contact support.";
-        }
-        
-        return encodedRedirect("error", "/sign-in", errorMessage);
-      }
-      
-      if (!data?.url) {
-        console.error("No OAuth URL returned from Supabase");
-        return encodedRedirect("error", "/sign-in", "Authentication system error: No redirect URL received");
-      }
-      
-      // Log the OAuth process for debugging
-      console.log("OAuth URL received:", data.url.substring(0, 100) + "...");
-      console.log("Starting Google OAuth flow with PKCE, redirecting to URL");
-      console.log("=== GOOGLE SIGN-IN DEBUG END ===");
-      
-      // Redirect to the OAuth URL
-      return redirect(data.url);
-    } catch (innerError) {
-      console.error("Error during OAuth setup:", innerError);
-      
-      // More detailed error logging
-      if (innerError instanceof Error) {
-        console.error({
-          name: innerError.name,
-          message: innerError.message,
-          stack: innerError.stack?.split("\n").slice(0, 5).join("\n"),
-        });
-        
-        // Specific error handling for common issues
-        if (innerError.message.includes("network")) {
-          return encodedRedirect("error", "/sign-in", "Network error during authentication. Please check your connection.");
-        }
-        
-        if (innerError.message.includes("CORS")) {
-          return encodedRedirect("error", "/sign-in", "Cross-origin error during authentication. This might be a configuration issue.");
-        }
-        
-        if (innerError.message.includes("OAuth")) {
-          return encodedRedirect("error", "/sign-in", "OAuth configuration error. Please ensure Google OAuth is properly set up in Supabase.");
-        }
-      }
-      
-      throw innerError; // Rethrow to outer catch block for general handling
-    }
-  } catch (e) {
-    console.error("=== GOOGLE SIGN-IN CRITICAL ERROR ===");
-    console.error("Unexpected error in Google OAuth flow:", e);
-    
-    // Enhanced error logging
-    const errorInfo = e instanceof Error 
-      ? {
-          name: e.name,
-          message: e.message,
-          stack: e.stack?.split("\n").slice(0, 5).join("\n"),
-          cause: e.cause ? String(e.cause) : undefined
-        }
-      : String(e);
-      
-    console.error("Error details:", errorInfo);
-    console.log("=== GOOGLE SIGN-IN DEBUG END ===");
-    
-    // More specific error message if possible
-    let errorMessage = "Unexpected error during authentication. Please try again later.";
-    
-    if (e instanceof Error) {
-      if (e.message.includes("provider not configured") || e.message.includes("Provider not supported")) {
-        errorMessage = "Google sign-in is not properly configured. Please contact support.";
-      } else if (e.message.includes("permission") || e.message.includes("authorize")) {
-        errorMessage = "Authorization failed. Please ensure you've granted the necessary permissions.";
-      }
-    }
-    
-    return encodedRedirect("error", "/sign-in", errorMessage);
-  }
-};
-
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
-  const supabase = await createClient();
+  const supabase = createClient();
   const callbackUrl = formData.get("callbackUrl")?.toString();
 
   if (!email) {
@@ -278,7 +115,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
 };
 
 export const resetPasswordAction = async (formData: FormData) => {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
@@ -315,7 +152,7 @@ export const resetPasswordAction = async (formData: FormData) => {
 };
 
 export const signOutAction = async () => {
-  const supabase = await createClient();
+  const supabase = createClient();
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
@@ -386,7 +223,7 @@ export const checkoutSessionAction = async ({
 };
 
 export const checkUserSubscription = async (userId: string) => {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   try {
     const { data: subscription, error } = await supabase
@@ -415,7 +252,7 @@ export const checkUserSubscription = async (userId: string) => {
 };
 
 export const manageSubscriptionAction = async (userId: string) => {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: subscription, error } = await supabase
     .from("subscriptions")

@@ -1,6 +1,8 @@
+'use client';
+
 import Footer from "@/components/footer";
 import Hero from "@/components/hero";
-import Navbar from "@/components/navbar";
+import ClientNavbar from "@/components/client-navbar";
 import PricingCard from "@/components/pricing-card";
 import {
   ArrowUpRight,
@@ -11,52 +13,63 @@ import {
   Download,
   Palette,
 } from "lucide-react";
-import { createClient } from "../../supabase/server";
+import { useEffect, useState } from "react";
+import { createBrowserSupabaseClient } from "../../supabase/client-browser";
 
-export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+// Static pricing data to ensure static export compatibility
+const customTiers = [
+  {
+    id: "free-tier",
+    name: "Free",
+    description:
+      "5 headshot generations\nBasic styles only\nAccount required\nStandard resolution only",
+    prices: [{ priceAmount: 0, id: "free-price" }],
+    popular: false,
+  },
+  {
+    id: "premium-tier",
+    name: "Premium",
+    description:
+      "30 headshot generations\nAll professional styles\nCustom background options\nHigh resolution downloads\nPriority processing",
+    prices: [{ priceAmount: 1499, id: "premium-price" }],
+    popular: true,
+  },
+  {
+    id: "professional-tier",
+    name: "Professional",
+    description:
+      "Unlimited generations\nAll professional styles\nCustom background options\nUltra-high resolution downloads\nPriority processing\nBatch processing\nAdvanced editing tools",
+    prices: [{ priceAmount: 2999, id: "professional-price" }],
+    popular: false,
+  },
+];
 
-  const { data: plans, error } = await supabase.functions.invoke(
-    "supabase-functions-get-plans",
-  );
+export default function Home() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Add custom tiers if they don't exist in the API response
-  const customTiers = [
-    {
-      id: "free-tier",
-      name: "Free",
-      description:
-        "5 headshot generations\nBasic styles only\nAccount required\nStandard resolution only",
-      prices: [{ priceAmount: 0, id: "free-price" }],
-      popular: false,
-    },
-    {
-      id: "premium-tier",
-      name: "Premium",
-      description:
-        "30 headshot generations\nAll professional styles\nCustom background options\nHigh resolution downloads\nPriority processing",
-      prices: [{ priceAmount: 1499, id: "premium-price" }],
-      popular: true,
-    },
-    {
-      id: "professional-tier",
-      name: "Professional",
-      description:
-        "Unlimited generations\nAll professional styles\nCustom background options\nUltra-high resolution downloads\nPriority processing\nBatch processing\nAdvanced editing tools",
-      prices: [{ priceAmount: 2999, id: "professional-price" }],
-      popular: false,
-    },
-  ];
+  useEffect(() => {
+    async function getUser() {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (!error && user) {
+          setUser(user);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  // Use custom tiers for now, later we can merge with API response
-  const result = customTiers;
+    getUser();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background theme-transition">
-      <Navbar />
+      <ClientNavbar />
       <Hero />
 
       {/* Features Section */}
@@ -199,9 +212,26 @@ export default async function Home() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto justify-center">
-            {result?.map((item: any) => (
-              <PricingCard key={item.id} item={item} user={user} />
-            ))}
+            {loading ? (
+              // Loading state for pricing cards
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-xl p-6 bg-card border border-border animate-pulse">
+                    <div className="h-6 bg-muted rounded mb-4 w-24"></div>
+                    <div className="h-12 bg-muted rounded mb-4"></div>
+                    <div className="space-y-2">
+                      {[1, 2, 3, 4].map((j) => (
+                        <div key={j} className="h-4 bg-muted rounded w-full"></div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              customTiers.map((item: any) => (
+                <PricingCard key={item.id} item={item} user={user} />
+              ))
+            )}
           </div>
         </div>
       </section>

@@ -3,9 +3,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "npx serve out",
+    "start": "next start",
     "lint": "next lint",
-    "clean": "rm -rf .next out",
+    "clean": "rm -rf .next",
     "cache-clean": "rm -rf node_modules/.cache .next/cache"
   },
   "dependencies": {
@@ -30,7 +30,7 @@
     "cmdk": "^1.0.4",
     "embla-carousel-react": "^8.5.2",
     "lucide-react": "^0.468.0",
-    "next": "^14.1.0",
+    "next": "^15.2.4",
     "next-themes": "^0.2.1",
     "postcss": "^8",
     "prettier": "^3.3.3",
@@ -49,6 +49,7 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^4.41.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

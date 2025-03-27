@@ -1,41 +1,19 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // Optimize for Netlify deployment - more compatible with Next.js 14
-  output: 'export',
+  // Removed static export to enable server actions and proper authentication
   
-  // Unoptimized images to avoid build failures on Netlify
+  // Keep unoptimized images setting for compatibility
   images: {
     unoptimized: true,
   },
-
-  // Add any headers or redirects needed for your app
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
-    ];
-  },
   
-  // Disable experimental features that might be causing build failures
+  // Fixed experimental settings for Next.js 15+
   experimental: {
-    // Disable turbo for production builds
-    turbo: process.env.NODE_ENV !== 'production',
+    // Update Turbopack configuration as object (not boolean)
+    turbo: {
+      enabled: process.env.NODE_ENV !== 'production'
+    }
   },
 
   // Implement build caching for faster rebuilds
@@ -56,10 +34,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  // For Next.js 14 on Netlify
+  // For Next.js 15 on Netlify
   trailingSlash: false,
   reactStrictMode: true,
-  swcMinify: true,
 };
 
 module.exports = nextConfig;
