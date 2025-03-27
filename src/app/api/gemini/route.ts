@@ -137,7 +137,12 @@ export async function POST(request: NextRequest) {
 
       // Extract the generated image from the response
       let generatedImage = null;
-      if (response.candidates && response.candidates.length > 0) {
+      if (
+        response.candidates && 
+        response.candidates.length > 0 && 
+        response.candidates[0].content && 
+        response.candidates[0].content.parts
+      ) {
         for (const part of response.candidates[0].content.parts) {
           if (part.inlineData) {
             generatedImage = part.inlineData.data;
