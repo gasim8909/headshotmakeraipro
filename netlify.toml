@@ -4,7 +4,7 @@
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "false"
-  NODE_VERSION = "18.17.0"  # Specific Node.js version compatible with Next.js 14
+  NODE_VERSION = "20.0.0"  # Updated Node.js version compatible with Next.js 15
   # Force production URL for authentication redirects
   NEXT_PUBLIC_SITE_URL = "https://headshotmakerpro.com"
   NODE_ENV = "production"  # Ensure production mode

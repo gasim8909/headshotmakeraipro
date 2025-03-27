@@ -8,6 +8,22 @@ console.log('=== Build Environment Check ===');
 console.log(`Node.js version: ${process.version}`);
 console.log(`Environment: ${process.env.NODE_ENV || 'undefined'}`);
 
+// Verify Node.js version meets Next.js 15 requirements
+const currentNodeVersion = process.version.slice(1).split('.').map(Number);
+const meetsRequirements = 
+  (currentNodeVersion[0] === 18 && currentNodeVersion[1] >= 18) || 
+  (currentNodeVersion[0] === 19 && currentNodeVersion[1] >= 8) ||
+  (currentNodeVersion[0] >= 20);
+
+if (!meetsRequirements) {
+  console.error('❌ ERROR: Node.js version is not compatible with Next.js 15');
+  console.error('Required: Node.js version ^18.18.0 || ^19.8.0 || >= 20.0.0');
+  console.error('Current: ' + process.version);
+  process.exit(1);
+} else {
+  console.log('✅ Node.js version is compatible with Next.js 15');
+}
+
 // Check critical environment variables
 console.log('\n=== Critical Environment Variables ===');
 const criticalVars = [
