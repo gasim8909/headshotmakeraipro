@@ -25,7 +25,7 @@ export default function DashboardNavbar({
         <Link href="/" prefetch className="text-xl font-bold flex items-center theme-transition">
           <ImageIcon className="h-6 w-6 mr-2 text-primary glow-primary dark:glow-primary" />
           <span className="text-gradient-primary flex items-center">
-            Headshot Maker AI
+            Headshot Maker Pro
             <Sparkles className="h-4 w-4 ml-1 text-accent" />
           </span>
         </Link>

@@ -131,7 +131,7 @@ export default function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-border">
           <div className="text-muted-foreground mb-4 md:mb-0 theme-transition">
-            © {currentYear} <span className="text-gradient-primary">Headshot Maker AI</span>. All rights reserved.
+            © {currentYear} <span className="text-gradient-primary">Headshot Maker Pro</span>. All rights reserved.
           </div>
 
           <div className="flex space-x-6">

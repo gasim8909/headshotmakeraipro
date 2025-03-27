@@ -97,7 +97,7 @@ export default function HeadshotPage() {
       <DashboardNavbar isGuest={!user} />
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2">Headshot Maker AI</h1>
+          <h1 className="text-3xl font-bold mb-2">Headshot Maker Pro</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Transform your casual photos into professional headshots in seconds
           </p>

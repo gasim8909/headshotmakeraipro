@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "../../supabase/server";
 import { Button } from "./ui/button";
-import { Image as ImageIcon, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
 import UserProfile from "./user-profile";
 import { Badge } from "./ui/badge";
@@ -20,10 +20,26 @@ export default async function Navbar() {
   return (
     <nav className="w-full border-b border-border bg-background py-3 theme-transition">
       <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link href="/" prefetch className="text-xl font-bold flex items-center theme-transition">
-          <ImageIcon className="h-6 w-6 mr-2 text-primary glow-primary dark:glow-primary" />
+        <Link href="/" prefetch className="text-xl font-bold flex items-center theme-transition">
+          {/* Custom Camera SVG Logo */}
+          <svg width="24" height="24" viewBox="0 0 32 32" className="mr-2 text-primary glow-primary dark:glow-primary">
+            <rect x="2" y="8" width="28" height="18" rx="2" fill="currentColor" />
+            <rect x="2" y="8" width="28" height="18" rx="2" fill="url(#paint0_linear)" />
+            <circle cx="16" cy="17" r="7" fill="#1E293B" />
+            <circle cx="16" cy="17" r="5" fill="#334155" />
+            <circle cx="16" cy="17" r="3" fill="#1E293B" />
+            <rect x="22" y="12" width="4" height="2" rx="1" fill="#E2E8F0" />
+            <path d="M12 8V6C12 5.44772 12.4477 5 13 5H19C19.5523 5 20 5.44772 20 6V8H12Z" fill="#334155" />
+            <circle cx="14" cy="15" r="1" fill="#F8FAFC" />
+            <defs>
+              <linearGradient id="paint0_linear" x1="2" y1="8" x2="30" y2="26" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#3B82F6" />
+                <stop offset="1" stopColor="#8B5CF6" />
+              </linearGradient>
+            </defs>
+          </svg>
           <span className="text-gradient-primary flex items-center">
-            Headshot Maker AI
+            Headshot Maker Pro
             <Sparkles className="h-4 w-4 ml-1 text-accent" />
           </span>
         </Link>
