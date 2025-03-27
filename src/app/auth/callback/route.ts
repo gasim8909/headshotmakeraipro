@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   console.log("=== AUTH CALLBACK DEBUG START ===");
+  console.log("Callback handler timestamp:", new Date().toISOString());
   
   try {
     console.log("Auth callback handler invoked");
@@ -17,6 +18,13 @@ export async function GET(request: Request) {
     });
     console.log("Auth callback received with params:", paramsObj);
     console.log("Full callback URL (without code):", request.url.replace(/code=[^&]+/, "code=REDACTED"));
+    
+    // Log environment details 
+    console.log("Environment check:", {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing",
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    });
     
     const code = requestUrl.searchParams.get("code");
     const redirect_to = requestUrl.searchParams.get("redirect_to");
